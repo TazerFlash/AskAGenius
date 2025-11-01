@@ -1,0 +1,38 @@
+.scientist-card {
+  background-color: #0c1427; /* Dark navy blue, slightly different from body */
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
+}
+
+.scientist-card::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  z-index: -1;
+  margin: -3px; /* Match border width */
+  border-radius: inherit;
+  background: linear-gradient(145deg, #f59e0b, #b45309); /* amber-500 to amber-700 */
+}
+
+.scientist-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 24px rgba(245, 158, 11, 0.2);
+}
+
+.scientist-image {
+  width: 100%;
+  height: 280px;
+  object-fit: cover;
+  object-position: top;
+  transition: transform 0.4s ease;
+}
+
+.scientist-card:hover .scientist-image {
+  transform: scale(1.05);
+}

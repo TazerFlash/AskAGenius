@@ -1,0 +1,10 @@
+
+<main class="min-h-screen bg-cover bg-center bg-fixed" style="background-image: url('https://images.unsplash.com/photo-1541852110198-56703554d1a5?q=80&w=2574&auto=format&fit=crop');">
+  <div class="min-h-screen bg-black/70 backdrop-blur-sm">
+    @if (currentView() === 'home') {
+      <app-home />
+    } @else {
+      <app-chat />
+    }
+  </div>
+</main>
