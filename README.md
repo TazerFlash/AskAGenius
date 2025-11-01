@@ -22,6 +22,78 @@ Welcome to **Ask A Genius**, an interactive digital museum where you can convers
   - **`gemini-2.5-flash`**: Used for all text-based generation, including chat responses and AI routing.
   - **`veo-2.0-generate-001`**: Used for the powerful text-to-video generation feature.
 
+## Technical Diagram
+
+This diagram illustrates the architecture of the application, showing how components and services interact with each other and with the Google Gemini API.
+
+```
++-------------------------------------------------------------------------+
+|                          User (in Browser)                              |
++-------------------------------------------------------------------------+
+      |                                      ^
+      | (Interacts with UI)                  | (UI Updates)
+      v                                      |
++-------------------------------------------------------------------------+
+|                            Angular Application                          |
+|                                                                         |
+|  +---------------------+  <-- (Reads State) --  +---------------------+  |
+|  |    AppComponent     |                        |   AppStateService   |  |
+|  | (View Controller)   |  --- (Updates State) ->|  (Signals-based)    |  |
+|  +---------------------+                        | - scientists[]      |  |
+|    | Renders View      |                        | - currentView       |  |
+|    |                   |                        | - selectedScientist |  |
+|    v                   |                        | - chatHistory[]     |  |
+|  +---------------------+                        +---------------------+  |
+|  | HomeComponent/      |                                     ^          |
+|  | ChatComponent       |--- (Triggers Actions) -------------- |          |
+|  +---------------------+                                     |          |
+|      |                                                       |          |
+|      +------------------- (Makes API Calls) ------------------+          |
+|                                      |                                  |
+|                                      v                                  |
+|                               +-----------------+                         |
+|                               |  GeminiService  |                         |
+|                               |  (API Layer)    |                         |
+|                               +-----------------+                         |
+|                                      |                                  |
++--------------------------------------|----------------------------------+
+                                       | (HTTP Requests)
+                                       v
++-------------------------------------------------------------------------+
+|                             Google Gemini API                           |
+|                                                                         |
+|  +------------------------+        +---------------------------------+  |
+|  | gemini-2.5-flash Model |        |   veo-2.0-generate-001 Model    |  |
+|  | (Text & Routing)       |        |   (Video Generation)            |  |
+|  +------------------------+        +---------------------------------+  |
+|                                                                         |
++-------------------------------------------------------------------------+
+```
+
+### Explanation of Flow
+
+1.  **Initialization**:
+    *   The `AppComponent` loads and reads the `currentView` signal from the `AppStateService`. Initially, it's 'home'.
+    *   The `AppComponent` renders the `HomeComponent`.
+    *   The `HomeComponent` gets the list of scientists from the `AppStateService` and displays them.
+
+2.  **User Interaction & State Management**:
+    *   A user action (e.g., clicking a scientist or submitting a question) in a component (`HomeComponent` or `ChatComponent`) calls a method on a service.
+    *   For state changes (like selecting a scientist or adding a message), the component calls the `AppStateService`.
+    *   The `AppStateService` updates its signals (e.g., `selectedScientist`, `chatHistory`).
+    *   Because components are subscribed to these signals, the UI updates automatically and efficiently. The `AppComponent` might switch from rendering `HomeComponent` to `ChatComponent`.
+
+3.  **API Communication**:
+    *   For AI interactions, the component calls the `GeminiService`.
+    *   The `GeminiService` is the **only** part of the app that communicates directly with the Google Gemini API. It abstracts away all the complexity of API calls.
+    *   It sends prompts to the appropriate model (`gemini-2.5-flash` for text, `veo-2.0-generate-001` for video) and processes the responses.
+    *   The results are returned to the component, which then updates the state in `AppStateService` (e.g., adding the AI's message to the chat history).
+
+This architecture creates a clean separation of concerns:
+- **Components** are responsible for the UI and user input.
+- **AppStateService** is the single source of truth for the application's state.
+- **GeminiService** handles all external AI communication.
+
 ## Project Structure
 
 The application is organized into a modular and maintainable structure:
@@ -34,7 +106,7 @@ The application is organized into a modular and maintainable structure:
 |-- /models
 |   |-- scientist.model.ts # TypeScript interfaces for data structures
 |-- /services
-|   |-- genius.service.ts  # Central state management service
+|   |-- genius.service.ts  # (Contains AppStateService) Central state management
 |   |-- gemini.service.ts  # Service for all Gemini API interactions
 |-- app.component.ts    # Root component, switches between home and chat views
 |-- app.component.html  # Root component template
@@ -47,14 +119,14 @@ index.tsx               # Bootstraps the Angular application
 
 ### 1. State Management with Signals
 
-The application employs a centralized state management pattern using Angular Signals within the `GeniusService`.
+The application employs a centralized state management pattern using Angular Signals within the `AppStateService` (located in `src/services/genius.service.ts`).
 
-- **`GeniusService`** acts as a single source of truth for shared application state, such as the list of scientists, the current view (`home` or `chat`), the selected scientist, and the chat history.
+- **`AppStateService`** acts as a single source of truth for shared application state, such as the list of scientists, the current view (`home` or `chat`), the selected scientist, and the chat history.
 - Using signals (`signal()`, `computed()`, `effect()`) provides a highly efficient and fine-grained change detection mechanism, which works seamlessly in a zoneless Angular application.
 
 ### 2. AI Persona Engineering
 
-The distinct personality of each scientist is not accidental. It's achieved through detailed prompt engineering in `genius.service.ts`.
+The distinct personality of each scientist is not accidental. It's achieved through detailed prompt engineering in the scientist data located in `src/services/genius.service.ts`.
 
 - Each `Scientist` object contains a `knowledgeBase` property. This is a comprehensive system prompt passed to the Gemini API.
 - This prompt instructs the AI on its persona, speaking style, areas of expertise, and even special instructions, like how to format a video generation prompt.
